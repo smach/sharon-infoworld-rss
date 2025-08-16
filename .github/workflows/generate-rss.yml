@@ -1,5 +1,5 @@
 # .github/workflows/generate-rss.yml
-name: Generate InfoWorld RSS Feed
+name: Generate Sharon Machlis RSS Feed
 
 on:
   schedule:
@@ -35,7 +35,6 @@ jobs:
       uses: actions/setup-node@v4
       with:
         node-version: '20'
-        cache: 'npm'
     
     - name: Install dependencies
       run: |

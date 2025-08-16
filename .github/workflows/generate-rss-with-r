@@ -20,6 +20,8 @@ on:
 jobs:
   generate-rss:
     runs-on: ubuntu-latest
+    permissions:
+      contents: write
     
     steps:
     - name: Checkout repository
@@ -124,18 +126,30 @@ jobs:
     
     - name: Run RSS generator
       run: |
-        echo "Running R script..."
-        Rscript scraper.R
-        
-        # Show some debug info
-        echo "Current directory contents:"
+        echo "🚀 Starting R script execution..."
+        echo "Current working directory: $(pwd)"
+        echo "Files before running script:"
         ls -la
         
-        # Check if the script ran without errors
-        if [ $? -eq 0 ]; then
+        echo "🔄 Running R script with verbose output..."
+        Rscript --verbose scraper.R 2>&1 | tee r_output.log
+        
+        # Capture the exit code
+        R_EXIT_CODE=${PIPESTATUS[0]}
+        
+        echo "📋 R script exit code: $R_EXIT_CODE"
+        echo "📁 Files after running script:"
+        ls -la
+        
+        echo "📄 Last 20 lines of R output:"
+        tail -20 r_output.log
+        
+        if [ $R_EXIT_CODE -eq 0 ]; then
           echo "✅ R script completed successfully"
         else
-          echo "❌ R script failed"
+          echo "❌ R script failed with exit code: $R_EXIT_CODE"
+          echo "🔍 Full R output log:"
+          cat r_output.log
           exit 1
         fi
     

@@ -1,11 +1,11 @@
 # InfoWorld RSS Feed Generator
 
-This code was written by Claude Opus generative AI in response to my prompts seeking code to create an RSS feed for my InfoWorld articles using GitHub Actions. Alas Claude preferred to write this in JavaScript instead of R, so I went with that. 😅 This should update every Thursday at 8 AM Eastern Time.
+This code will allegedly create an RSS feed of my articles at InfoWorld. It was written by Claude Opus in response to my prompts seeking code to create an RSS feed for my InfoWorld articles using GitHub Actions. Alas Claude preferred to write this in JavaScript instead of R, so I went with that. 😅 This should update every Thursday at 8 AM Eastern Time.
 
 
 ## 📡 Accessing the RSS Feed
 
-Once the workflow runs successfully, you can access your RSS feed at:
+Once the workflow runs successfully, anyone can access the RSS feed at:
 
 ### Option 1: Raw GitHub URL (Works immediately)
 ```

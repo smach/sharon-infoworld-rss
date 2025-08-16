@@ -33,69 +33,104 @@ async function scrapeInfoWorldProfile(url) {
       timeout: 60000 
     });
 
-    // Wait for dynamic content to load if needed
-    await new Promise(resolve => setTimeout(resolve, 3000));
+    // A more reliable wait: wait for the main content column to appear.
+    try {
+      await page.waitForSelector('div.main-col', { timeout: 10000 });
+      console.log('Main content column found.');
+    } catch (e) {
+      console.log('Main content column not found, proceeding anyway.');
+    }
 
     // Scroll to load more content
     await autoScroll(page);
 
-    console.log('Extracting articles...');
+    console.log('Extracting articles with robust fallback logic...');
     
-    // Extract article data with a more reliable selector
+    // ======================= ROBUST LOGIC START =======================
     const articles = await page.evaluate(() => {
-      const articleData = [];
-      
-      // ======================= REVISED LOGIC START =======================
+      let articleData = [];
 
-      // This selector is more robust. It targets articles (`article.river-well`)
-      // specifically within the main content column (`div.main-col`),
-      // effectively ignoring sidebars and footers.
-      const articleElements = document.querySelectorAll('div.main-col article.river-well');
-      
-      console.log(`Found ${articleElements.length} potential article elements in the main column.`);
+      // --- Attempt 1: The Ideal, Specific Selector ---
+      let articleElements = document.querySelectorAll('div.main-col article.river-well');
+      console.log(`Attempt 1: Found ${articleElements.length} articles with 'div.main-col article.river-well'.`);
 
-      articleElements.forEach(element => {
-        try {
-          const urlElement = element.querySelector('h3 a, h2 a');
-          const url = urlElement ? new URL(urlElement.href, window.location.origin).href : null;
-          
-          // Skip if a valid URL isn't found
-          if (!url || !url.includes('infoworld.com/article/')) {
-            return;
+      // --- Attempt 2: A Broader, More Flexible Selector ---
+      if (articleElements.length === 0) {
+        console.log("Attempt 1 failed. Trying a broader selector: 'article.river-well'.");
+        articleElements = document.querySelectorAll('article.river-well');
+        console.log(`Attempt 2: Found ${articleElements.length} articles with 'article.river-well'.`);
+      }
+
+      // If Attempts 1 or 2 succeeded, process the found elements
+      if (articleElements.length > 0) {
+        articleElements.forEach(element => {
+          try {
+            const urlElement = element.querySelector('h3 a, h2 a');
+            const url = urlElement ? new URL(urlElement.href, window.location.origin).href : null;
+            
+            if (!url || !url.includes('infoworld.com/article/')) return;
+
+            // Only add articles by the correct author from the byline
+            const authorElement = element.querySelector('.byline a');
+            if (!authorElement || !authorElement.textContent.trim().includes('Sharon Machlis')) {
+                return; // Skip if author is not Sharon Machlis
+            }
+
+            const title = urlElement ? urlElement.textContent.trim() : 'Untitled Article';
+            const description = element.querySelector('.post-excerpt p')?.textContent?.trim() || '';
+            const pubDate = element.querySelector('.pub-date time')?.getAttribute('datetime') || 
+                            element.querySelector('.pub-date')?.textContent?.trim() || '';
+            
+            articleData.push({ title, url, description, pubDate, author: 'Sharon Machlis' });
+          } catch (err) {
+            console.error('Error processing an article element:', err.message);
           }
+        });
+      }
 
-          const title = urlElement ? urlElement.textContent.trim() : 'Untitled Article';
-          const description = element.querySelector('.post-excerpt p')?.textContent?.trim() || '';
-          
-          // Try to get the datetime attribute first, then fall back to text content
-          const pubDate = element.querySelector('.pub-date time')?.getAttribute('datetime') || 
-                          element.querySelector('.pub-date')?.textContent?.trim() || '';
-          
-          articleData.push({
-            title: title.substring(0, 200),
-            url: url,
-            description: description.substring(0, 500),
-            pubDate: pubDate,
-            author: 'Sharon Machlis' // Assumed since we are on the author's page
-          });
+      // --- Attempt 3: The Failsafe - Grab All Article Links ---
+      if (articleData.length === 0) {
+        console.log("Attempts 1 & 2 failed. Trying failsafe: find all article links and reconstruct data.");
+        const allLinks = document.querySelectorAll('a[href*="/article/"]');
+        console.log(`Attempt 3: Found ${allLinks.length} potential article links.`);
+        
+        allLinks.forEach(link => {
+            try {
+                const url = new URL(link.href, window.location.origin).href;
+                if (!url.includes('infoworld.com/article/')) return;
 
-        } catch (err) {
-          console.error('Error processing a potential article element:', err.message);
-        }
-      });
+                // To avoid grabbing unrelated articles, we check the context of the link.
+                // We assume if the link is inside a container with your name, it's yours.
+                // This is a heuristic, but it's our best last-ditch effort.
+                const parentArticle = link.closest('article, .story, .river-well, .content-item');
+                if (parentArticle) {
+                    const authorElement = parentArticle.querySelector('.byline a');
+                    if (authorElement && !authorElement.textContent.trim().includes('Sharon Machlis')) {
+                        return; // It's an article, but not yours.
+                    }
+                }
 
-      // ======================= REVISED LOGIC END =======================
+                const title = link.textContent?.trim().replace(/\s+/g, ' ') || 'Untitled Article';
+                // Description and Date are hard to get reliably this way, so we leave them blank.
+                if (title && title.length > 5) { // Basic filter for valid titles
+                    articleData.push({ title, url, description: '', pubDate: '', author: 'Sharon Machlis' });
+                }
+            } catch(e) {
+                // Ignore errors on invalid links
+            }
+        });
+      }
       
-      // Remove duplicates based on URL
+      // Remove duplicates based on URL - crucial for the failsafe method
       const uniqueArticles = Array.from(new Map(articleData.map(item => [item.url, item])).values());
-      
       return uniqueArticles;
     });
+    // ======================= ROBUST LOGIC END =======================
 
     console.log(`Extracted ${articles.length} unique articles.`);
     
     if (articles.length === 0) {
-      console.log('No articles found with the primary method. The page structure might have changed.');
+      console.log('All scraping attempts failed. The website may have fundamentally changed.');
       return [];
     }
     

@@ -41,63 +41,59 @@ async function scrapeInfoWorldProfile(url) {
 
     console.log('Extracting articles...');
     
-    // Extract article data with refined logic
+    // Extract article data with a more reliable selector
     const articles = await page.evaluate(() => {
       const articleData = [];
       
-      // ======================= REFINED LOGIC START =======================
+      // ======================= REVISED LOGIC START =======================
 
-      // 1. Use a more specific selector to target only the main article list.
-      // This avoids picking up "featured" or "related" articles in other sections.
-      const articleElements = document.querySelectorAll('main .river-well.blog.post');
+      // This selector is more robust. It targets articles (`article.river-well`)
+      // specifically within the main content column (`div.main-col`),
+      // effectively ignoring sidebars and footers.
+      const articleElements = document.querySelectorAll('div.main-col article.river-well');
       
-      console.log(`Found ${articleElements.length} potential article elements in the main list.`);
+      console.log(`Found ${articleElements.length} potential article elements in the main column.`);
 
       articleElements.forEach(element => {
         try {
-          // 2. Verify the author's name before processing the article.
-          const authorElement = element.querySelector('.byline a');
-          const authorName = authorElement ? authorElement.textContent.trim() : '';
-
-          // Only proceed if the author is Sharon Machlis
-          if (authorName.includes('Sharon Machlis')) {
-            const urlElement = element.querySelector('h3 a, h2 a'); // Article title is in an h3 or h2
-            const url = urlElement ? new URL(urlElement.href, window.location.origin).href : null;
-            
-            // Skip if a valid URL isn't found
-            if (!url || !url.includes('infoworld.com/article/')) {
-              return;
-            }
-
-            const title = urlElement ? urlElement.textContent.trim() : 'Untitled Article';
-            const description = element.querySelector('.post-excerpt p')?.textContent?.trim() || '';
-            const pubDate = element.querySelector('.pub-date time')?.getAttribute('datetime') || 
-                            element.querySelector('.pub-date')?.textContent?.trim() || '';
-            
-            articleData.push({
-              title: title.substring(0, 200),
-              url: url,
-              description: description.substring(0, 500),
-              pubDate: pubDate,
-              author: 'Sharon Machlis' // Now we know it's the correct author
-            });
+          const urlElement = element.querySelector('h3 a, h2 a');
+          const url = urlElement ? new URL(urlElement.href, window.location.origin).href : null;
+          
+          // Skip if a valid URL isn't found
+          if (!url || !url.includes('infoworld.com/article/')) {
+            return;
           }
+
+          const title = urlElement ? urlElement.textContent.trim() : 'Untitled Article';
+          const description = element.querySelector('.post-excerpt p')?.textContent?.trim() || '';
+          
+          // Try to get the datetime attribute first, then fall back to text content
+          const pubDate = element.querySelector('.pub-date time')?.getAttribute('datetime') || 
+                          element.querySelector('.pub-date')?.textContent?.trim() || '';
+          
+          articleData.push({
+            title: title.substring(0, 200),
+            url: url,
+            description: description.substring(0, 500),
+            pubDate: pubDate,
+            author: 'Sharon Machlis' // Assumed since we are on the author's page
+          });
+
         } catch (err) {
           console.error('Error processing a potential article element:', err.message);
         }
       });
 
-      // ======================= REFINED LOGIC END =======================
+      // ======================= REVISED LOGIC END =======================
       
-      // Remove duplicates based on URL (this is good practice to keep)
+      // Remove duplicates based on URL
       const uniqueArticles = Array.from(new Map(articleData.map(item => [item.url, item])).values());
       
       return uniqueArticles;
     });
 
-    console.log(`Extracted ${articles.length} unique articles by Sharon Machlis`);
+    console.log(`Extracted ${articles.length} unique articles.`);
     
-    // Keep this fallback, but it's less likely to be needed now
     if (articles.length === 0) {
       console.log('No articles found with the primary method. The page structure might have changed.');
       return [];
@@ -216,7 +212,7 @@ function generateRSS(articles, profileUrl) {
   return rssContent;
 }
 
-// Main function (unchanged, but added a check for an empty articles array)
+// Main function (unchanged)
 async function main() {
   const profileUrl = 'https://www.infoworld.com/profile/sharon-machlis/';
   
@@ -232,8 +228,6 @@ async function main() {
     
     if (!articles || articles.length === 0) {
       console.error('⚠️  No articles found. The page structure might have changed or there were no articles by the specified author.');
-      // Exit gracefully without creating an error feed if no articles were found.
-      // You can decide to create a minimal feed here if you prefer.
       process.exit(0); 
     }
     

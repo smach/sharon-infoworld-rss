@@ -8,6 +8,7 @@ This code will allegedly create an RSS feed of my articles at InfoWorld. It was 
 
 In theory, anyone can access the RSS feed at: [https://smach.github.io/sharon-infoworld-rss/feed.xml](https://smach.github.io/sharon-infoworld-rss/feed.xml)
 
+_Update: Claude did write me an R script to generate the RSS feed. The GitHub Action is taking a long time to debug and even run, so I'm sticking with the JavaScript version for actually creating the RSS feed._
 
 ## 📱 Adding to RSS Readers
 

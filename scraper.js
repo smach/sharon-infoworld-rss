@@ -1,6 +1,6 @@
 // scraper.js - GitHub Actions compatible version
 // 
-// This scraper generates an RSS feed from Sharon Machlis's InfoWorld author profile page.
+// This scraper generates an RSS feed from InfoWorld author profile pages.
 // It handles JavaScript-rendered content and filters out unrelated articles.
 //
 // KEY FEATURES:
@@ -14,7 +14,7 @@
 //   from the bottom of the page. Adjust if you're missing articles or getting wrong ones.
 // - DEBUG_MODE: Set to true to see detailed extraction information
 //
-const MAX_ARTICLES = 10;  // Adjust this if needed
+const MAX_ARTICLES = 30;  // Adjust this if needed
 const DEBUG_MODE = false;  // Set to true for detailed logging
 
 const puppeteer = require('puppeteer');

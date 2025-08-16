@@ -1,0 +1,126 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom" xmlns:dc="http://purl.org/dc/elements/1.1/">
+  <channel>
+    <title>Sharon Machlis - InfoWorld Articles</title>
+    <link>https://www.infoworld.com/profile/sharon-machlis/</link>
+    <description>Latest articles by Sharon Machlis on InfoWorld - Automatically generated RSS feed</description>
+    <language>en-us</language>
+    <lastBuildDate>Sat, 16 Aug 2025 01:05:54 GMT</lastBuildDate>
+    <generator>GitHub Actions RSS Generator</generator>
+    <ttl>10080</ttl>
+    <atom:link href="https://raw.githubusercontent.com/YOUR_USERNAME/YOUR_REPO/main/feed.xml" rel="self" type="application/rss+xml" />
+
+    <item>
+      <title>Do more with R</title>
+      <link>https://www.infoworld.com/article/2262286/do-more-with-r-video-tutorials.html</link>
+      <description><![CDATA[Click to read the full article on InfoWorld.]]></description>
+      <dc:creator>Sharon Machlis</dc:creator>
+      <pubDate>Sat, 16 Aug 2025 01:05:54 GMT</pubDate>
+      <guid isPermaLink="true">https://www.infoworld.com/article/2262286/do-more-with-r-video-tutorials.html</guid>
+    </item>
+    <item>
+      <title>How to create your own RAG applications in R</title>
+      <link>https://www.infoworld.com/article/4020484/generative-ai-rag-comes-to-the-r-tidyverse.html</link>
+      <description><![CDATA[See how to query documents using natural language, LLMs, and R—including dplyr-like filtering on metadata. Plus, learn how to use an LLM to extract structured data for text filtering.]]></description>
+      <dc:creator>Sharon Machlis</dc:creator>
+      <pubDate>Fri, 15 Aug 2025 01:05:54 GMT</pubDate>
+      <guid isPermaLink="true">https://www.infoworld.com/article/4020484/generative-ai-rag-comes-to-the-r-tidyverse.html</guid>
+    </item>
+    <item>
+      <title>GenAI tools for R: New tools to make R programming easier</title>
+      <link>https://www.infoworld.com/article/3848270/genai-tools-for-r-new-tools-to-make-r-programming-easier.html</link>
+      <description><![CDATA[Click to read the full article on InfoWorld.]]></description>
+      <dc:creator>Sharon Machlis</dc:creator>
+      <pubDate>Thu, 14 Aug 2025 01:05:54 GMT</pubDate>
+      <guid isPermaLink="true">https://www.infoworld.com/article/3848270/genai-tools-for-r-new-tools-to-make-r-programming-easier.html</guid>
+    </item>
+    <item>
+      <title>3 of the best LLM integration tools for R</title>
+      <link>https://www.infoworld.com/article/3828268/top-llm-integration-tools-for-r-programming.html</link>
+      <description><![CDATA[Click to read the full article on InfoWorld.]]></description>
+      <dc:creator>Sharon Machlis</dc:creator>
+      <pubDate>Wed, 13 Aug 2025 01:05:54 GMT</pubDate>
+      <guid isPermaLink="true">https://www.infoworld.com/article/3828268/top-llm-integration-tools-for-r-programming.html</guid>
+    </item>
+    <item>
+      <title>By Sharon Machlis Dec 19, 2024 15 mins Generative AI Natural Language Processing R Language</title>
+      <link>https://www.infoworld.com/article/3623509/create-searchable-bluesky-bookmarks-with-r.html</link>
+      <description><![CDATA[Click to read the full article on InfoWorld.]]></description>
+      <dc:creator>Sharon Machlis</dc:creator>
+      <pubDate>Tue, 12 Aug 2025 01:05:54 GMT</pubDate>
+      <guid isPermaLink="true">https://www.infoworld.com/article/3623509/create-searchable-bluesky-bookmarks-with-r.html</guid>
+    </item>
+    <item>
+      <title>By Sharon Machlis Dec 19, 2024 8 mins Developer R Language Technology Industry</title>
+      <link>https://www.infoworld.com/article/3624701/faq-getting-started-with-bluesky.html</link>
+      <description><![CDATA[Click to read the full article on InfoWorld.]]></description>
+      <dc:creator>Sharon Machlis</dc:creator>
+      <pubDate>Mon, 11 Aug 2025 01:05:54 GMT</pubDate>
+      <guid isPermaLink="true">https://www.infoworld.com/article/3624701/faq-getting-started-with-bluesky.html</guid>
+    </item>
+    <item>
+      <title>By Sharon Machlis Jul 23, 2024 2 mins Data Science Python Software Deployment</title>
+      <link>https://www.infoworld.com/article/3476823/shiny-for-python-adds-chat-component-for-generative-ai-chatbots.html</link>
+      <description><![CDATA[Click to read the full article on InfoWorld.]]></description>
+      <dc:creator>Sharon Machlis</dc:creator>
+      <pubDate>Sun, 10 Aug 2025 01:05:54 GMT</pubDate>
+      <guid isPermaLink="true">https://www.infoworld.com/article/3476823/shiny-for-python-adds-chat-component-for-generative-ai-chatbots.html</guid>
+    </item>
+    <item>
+      <title>By Sharon Machlis Jun 27, 2024 3 mins Integrated Development Environments Python R Language</title>
+      <link>https://www.infoworld.com/article/2510428/maker-of-rstudio-launches-new-r-and-python-ide.html</link>
+      <description><![CDATA[Click to read the full article on InfoWorld.]]></description>
+      <dc:creator>Sharon Machlis</dc:creator>
+      <pubDate>Sat, 09 Aug 2025 01:05:54 GMT</pubDate>
+      <guid isPermaLink="true">https://www.infoworld.com/article/2510428/maker-of-rstudio-launches-new-r-and-python-ide.html</guid>
+    </item>
+    <item>
+      <title>By Sharon Machlis May 30, 2024 26 mins Artificial Intelligence Generative AI Software Development</title>
+      <link>https://www.infoworld.com/article/2338922/5-easy-ways-to-run-an-llm-locally.html</link>
+      <description><![CDATA[Click to read the full article on InfoWorld.]]></description>
+      <dc:creator>Sharon Machlis</dc:creator>
+      <pubDate>Fri, 08 Aug 2025 01:05:54 GMT</pubDate>
+      <guid isPermaLink="true">https://www.infoworld.com/article/2338922/5-easy-ways-to-run-an-llm-locally.html</guid>
+    </item>
+    <item>
+      <title>By Sharon Machlis Feb 15, 2024 11 mins Analytics R Language Visual Studio Code</title>
+      <link>https://www.infoworld.com/article/2267616/how-to-run-r-in-visual-studio-code.html</link>
+      <description><![CDATA[Click to read the full article on InfoWorld.]]></description>
+      <dc:creator>Sharon Machlis</dc:creator>
+      <pubDate>Thu, 07 Aug 2025 01:05:54 GMT</pubDate>
+      <guid isPermaLink="true">https://www.infoworld.com/article/2267616/how-to-run-r-in-visual-studio-code.html</guid>
+    </item>
+    <item>
+      <title>By Sharon Machlis Jan 5, 2024 3 mins R Language Software Development Technology Industry</title>
+      <link>https://www.infoworld.com/article/2335751/posit-lays-off-r-markdown-knitr-creator-yihui-xie.html</link>
+      <description><![CDATA[Click to read the full article on InfoWorld.]]></description>
+      <dc:creator>Sharon Machlis</dc:creator>
+      <pubDate>Wed, 06 Aug 2025 01:05:54 GMT</pubDate>
+      <guid isPermaLink="true">https://www.infoworld.com/article/2335751/posit-lays-off-r-markdown-knitr-creator-yihui-xie.html</guid>
+    </item>
+    <item>
+      <title>Can your cloud provider really scale?</title>
+      <link>https://www.infoworld.com/article/4040081/can-your-cloud-provider-really-scale.html</link>
+      <description><![CDATA[Click to read the full article on InfoWorld.]]></description>
+      <dc:creator>Sharon Machlis</dc:creator>
+      <pubDate>Tue, 05 Aug 2025 01:05:54 GMT</pubDate>
+      <guid isPermaLink="true">https://www.infoworld.com/article/4040081/can-your-cloud-provider-really-scale.html</guid>
+    </item>
+    <item>
+      <title>The truth about Python’s AI-powered popularity surge</title>
+      <link>https://www.infoworld.com/article/4039287/the-truth-about-pythons-ai-powered-popularity-surge.html</link>
+      <description><![CDATA[Click to read the full article on InfoWorld.]]></description>
+      <dc:creator>Sharon Machlis</dc:creator>
+      <pubDate>Mon, 04 Aug 2025 01:05:54 GMT</pubDate>
+      <guid isPermaLink="true">https://www.infoworld.com/article/4039287/the-truth-about-pythons-ai-powered-popularity-surge.html</guid>
+    </item>
+    <item>
+      <title>Monitoring microservices: Best practices for robust systems</title>
+      <link>https://www.infoworld.com/article/4037663/monitoring-microservices-best-practices-for-robust-systems.html</link>
+      <description><![CDATA[Click to read the full article on InfoWorld.]]></description>
+      <dc:creator>Sharon Machlis</dc:creator>
+      <pubDate>Sun, 03 Aug 2025 01:05:54 GMT</pubDate>
+      <guid isPermaLink="true">https://www.infoworld.com/article/4037663/monitoring-microservices-best-practices-for-robust-systems.html</guid>
+    </item>
+  </channel>
+</rss>

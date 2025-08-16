@@ -1,4 +1,4 @@
-// scraper.js - GitHub Actions compatible version rewritten by Gemini
+// scraper.js - GitHub Actions compatible version
 const puppeteer = require('puppeteer');
 const fs = require('fs').promises;
 

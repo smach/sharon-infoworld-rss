@@ -28,7 +28,7 @@ https://smach.github.io/sharon-infoworld-rss/feed.xml
 
 
 
-- **Raw URL**: `[https://raw.githubusercontent.com/smach/sharon-infoworld-rss/main/feed.xml](https://raw.githubusercontent.com/smach/sharon-infoworld-rss/refs/heads/main/feed.xml)`
+- **Raw URL**: [https://raw.githubusercontent.com/smach/sharon-infoworld-rss/main/feed.xml](https://raw.githubusercontent.com/smach/sharon-infoworld-rss/refs/heads/main/feed.xml)
 - **GitHub Pages**: `https://smach.github.io/sharon-infoworld-rss/feed.xml`
 - **jsDelivr CDN**: `https://cdn.jsdelivr.net/gh/smach/sharon-infoworld-rss@main/feed.xml`
 

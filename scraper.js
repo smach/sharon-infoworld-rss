@@ -1,25 +1,26 @@
-// Main file to generate RSS feed
 // scraper.js - GitHub Actions compatible version
 const puppeteer = require('puppeteer');
 const fs = require('fs').promises;
 
 async function scrapeInfoWorldProfile(url) {
-  // Launch browser with GitHub Actions compatible settings
-  const browser = await puppeteer.launch({
-    headless: 'new',
-    args: [
-      '--no-sandbox',
-      '--disable-setuid-sandbox',
-      '--disable-dev-shm-usage',
-      '--disable-accelerated-2d-canvas',
-      '--no-first-run',
-      '--no-zygote',
-      '--single-process',
-      '--disable-gpu'
-    ]
-  });
-
+  let browser;
+  
   try {
+    // Launch browser with GitHub Actions compatible settings
+    browser = await puppeteer.launch({
+      headless: 'new',
+      args: [
+        '--no-sandbox',
+        '--disable-setuid-sandbox',
+        '--disable-dev-shm-usage',
+        '--disable-accelerated-2d-canvas',
+        '--no-first-run',
+        '--no-zygote',
+        '--single-process',
+        '--disable-gpu'
+      ]
+    });
+
     const page = await browser.newPage();
     
     // Set viewport and user agent
@@ -32,13 +33,17 @@ async function scrapeInfoWorldProfile(url) {
       timeout: 60000 
     });
 
-    // Wait a bit for dynamic content
-    await page.waitForTimeout(3000);
+    // Wait 3 seconds for dynamic content to load
+    await new Promise(resolve => setTimeout(resolve, 3000));
 
-    // Try to wait for articles to load
-    await page.waitForSelector('article, .article-item, [class*="article"], a[href*="/article/"]', {
-      timeout: 15000
-    }).catch(() => console.log('Article selector timeout - continuing anyway'));
+    // Try to wait for articles to load (with timeout catch)
+    try {
+      await page.waitForSelector('article, .article-item, [class*="article"], a[href*="/article/"]', {
+        timeout: 15000
+      });
+    } catch (e) {
+      console.log('Article selector timeout - continuing anyway');
+    }
 
     // Scroll to load more content
     await autoScroll(page);
@@ -62,8 +67,12 @@ async function scrapeInfoWorldProfile(url) {
       
       let elements = new Set();
       for (const selector of selectors) {
-        const found = document.querySelectorAll(selector);
-        found.forEach(el => elements.add(el));
+        try {
+          const found = document.querySelectorAll(selector);
+          found.forEach(el => elements.add(el));
+        } catch (e) {
+          console.log(`Selector failed: ${selector}`);
+        }
       }
       
       // Convert Set to Array
@@ -94,7 +103,7 @@ async function scrapeInfoWorldProfile(url) {
                      element.textContent?.trim() ||
                      'Untitled Article';
           
-          // Clean up title - remove "Read more" type text
+          // Clean up title
           title = title.replace(/Read more.*$/i, '').replace(/\s+/g, ' ').trim();
           
           // Extract description
@@ -104,7 +113,7 @@ async function scrapeInfoWorldProfile(url) {
           let pubDate = element.querySelector('[class*="date"], time, [datetime]')?.textContent?.trim() ||
                        element.querySelector('time')?.getAttribute('datetime') || '';
           
-          // Only add if we have a valid article URL
+          // Only add if we have a valid InfoWorld article URL
           if (url.includes('infoworld.com/article/')) {
             articleData.push({
               title: title.substring(0, 200),
@@ -115,7 +124,7 @@ async function scrapeInfoWorldProfile(url) {
             });
           }
         } catch (err) {
-          console.error('Error processing element:', err);
+          console.error('Error processing element:', err.message);
         }
       });
       
@@ -138,7 +147,7 @@ async function scrapeInfoWorldProfile(url) {
           description: '',
           pubDate: '',
           author: 'Sharon Machlis'
-        })).filter(item => item.url.includes('infoworld.com/article/'));
+        })).filter(item => item.url && item.url.includes('infoworld.com/article/'));
       });
       
       // Remove duplicates
@@ -149,10 +158,12 @@ async function scrapeInfoWorldProfile(url) {
     return articles.slice(0, 50); // Limit to 50 most recent articles
 
   } catch (error) {
-    console.error('Error during scraping:', error);
+    console.error('Error during scraping:', error.message);
     throw error;
   } finally {
-    await browser.close();
+    if (browser) {
+      await browser.close();
+    }
   }
 }
 
@@ -162,16 +173,18 @@ async function autoScroll(page) {
     await new Promise((resolve) => {
       let totalHeight = 0;
       const distance = 100;
+      const scrollDelay = 100;
+      
       const timer = setInterval(() => {
         const scrollHeight = document.body.scrollHeight;
         window.scrollBy(0, distance);
         totalHeight += distance;
 
-        if(totalHeight >= scrollHeight - window.innerHeight){
+        if (totalHeight >= scrollHeight - window.innerHeight) {
           clearInterval(timer);
           resolve();
         }
-      }, 100);
+      }, scrollDelay);
       
       // Stop after 5 seconds max
       setTimeout(() => {
@@ -185,13 +198,23 @@ async function autoScroll(page) {
 // Generate RSS XML from articles
 function generateRSS(articles, profileUrl) {
   const now = new Date().toUTCString();
-  const buildDate = new Date().toISOString();
+  
+  // Escape XML special characters
+  const escapeXml = (text) => {
+    if (!text) return '';
+    return text
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;')
+      .replace(/'/g, '&apos;');
+  };
   
   let rssContent = `<?xml version="1.0" encoding="UTF-8"?>
 <rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom" xmlns:dc="http://purl.org/dc/elements/1.1/">
   <channel>
     <title>Sharon Machlis - InfoWorld Articles</title>
-    <link>${profileUrl}</link>
+    <link>${escapeXml(profileUrl)}</link>
     <description>Latest articles by Sharon Machlis on InfoWorld - Automatically generated RSS feed</description>
     <language>en-us</language>
     <lastBuildDate>${now}</lastBuildDate>
@@ -201,37 +224,32 @@ function generateRSS(articles, profileUrl) {
 `;
 
   articles.forEach((article, index) => {
-    // Clean and escape XML special characters
-    const escapeXml = (text) => {
-      if (!text) return '';
-      return text
-        .replace(/&/g, '&amp;')
-        .replace(/</g, '&lt;')
-        .replace(/>/g, '&gt;')
-        .replace(/"/g, '&quot;')
-        .replace(/'/g, '&apos;');
-    };
-    
     const title = escapeXml(article.title || `Article ${index + 1}`);
     const description = escapeXml(article.description || 'Click to read the full article on InfoWorld.');
     const author = escapeXml(article.author || 'Sharon Machlis');
+    const url = escapeXml(article.url);
     
-    // Try to parse the date or use current date minus index days (to maintain order)
+    // Try to parse the date or use current date minus index days
     let pubDate = now;
     if (article.pubDate) {
       try {
         const parsed = new Date(article.pubDate);
         if (!isNaN(parsed.getTime())) {
           pubDate = parsed.toUTCString();
+        } else {
+          // Fallback date
+          const date = new Date();
+          date.setDate(date.getDate() - index);
+          pubDate = date.toUTCString();
         }
       } catch (e) {
-        // Use a date based on index to maintain order
+        // Fallback date
         const date = new Date();
         date.setDate(date.getDate() - index);
         pubDate = date.toUTCString();
       }
     } else {
-      // Use a date based on index to maintain order
+      // Use date based on index to maintain order
       const date = new Date();
       date.setDate(date.getDate() - index);
       pubDate = date.toUTCString();
@@ -240,11 +258,11 @@ function generateRSS(articles, profileUrl) {
     rssContent += `
     <item>
       <title>${title}</title>
-      <link>${article.url}</link>
+      <link>${url}</link>
       <description><![CDATA[${description}]]></description>
       <dc:creator>${author}</dc:creator>
       <pubDate>${pubDate}</pubDate>
-      <guid isPermaLink="true">${article.url}</guid>
+      <guid isPermaLink="true">${url}</guid>
     </item>`;
   });
 
@@ -270,7 +288,7 @@ async function main() {
     // Scrape articles
     const articles = await scrapeInfoWorldProfile(profileUrl);
     
-    if (articles.length === 0) {
+    if (!articles || articles.length === 0) {
       console.error('⚠️  No articles found. The page structure might have changed.');
       console.log('Creating minimal RSS feed...');
       
@@ -284,13 +302,14 @@ async function main() {
       }], profileUrl);
       
       await fs.writeFile('feed.xml', minimalRss, 'utf8');
+      console.log('Minimal feed created.');
       process.exit(0);
     }
     
     // Generate RSS
     const rssContent = generateRSS(articles, profileUrl);
     
-    // Save to feed.xml (standard name for RSS feeds)
+    // Save to feed.xml
     await fs.writeFile('feed.xml', rssContent, 'utf8');
     
     console.log('✅ RSS feed generated successfully!');

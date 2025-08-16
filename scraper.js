@@ -1,11 +1,21 @@
 // scraper.js - GitHub Actions compatible version
 // 
+// This scraper generates an RSS feed from InfoWorld author Sharon Machlis's profile page.
+// It handles JavaScript-rendered content and filters out unrelated articles.
+//
+// KEY FEATURES:
+// - Excludes articles from "Trending", "Popular", "Related" sections
+// - Removes author metadata from titles (dates, reading time, categories)
+// - Filters out articles by other authors
+// - Limits results to prevent including unrelated content
+//
 // CONFIGURATION:
 // - MAX_ARTICLES: Limits the number of articles to prevent including unrelated content
 //   from the bottom of the page. Adjust if you're missing articles or getting wrong ones.
-// - EXCLUDE_SECTIONS: CSS selectors for page sections to ignore (trending, related, etc.)
+// - DEBUG_MODE: Set to true to see detailed extraction information
 //
-const MAX_ARTICLES = 30;  // Adjust this if needed
+const MAX_ARTICLES = 10;  // Adjust this if needed
+const DEBUG_MODE = false;  // Set to true for detailed logging
 
 const puppeteer = require('puppeteer');
 const fs = require('fs').promises;
@@ -59,7 +69,8 @@ async function scrapeInfoWorldProfile(url) {
     console.log('Extracting articles...');
     
     // Extract article data
-    const articles = await page.evaluate(() => {
+    const debugMode = DEBUG_MODE;
+    const articles = await page.evaluate((debugMode) => {
       const articleData = [];
       
       // First, identify and exclude sections that typically contain other authors' content
@@ -141,9 +152,11 @@ async function scrapeInfoWorldProfile(url) {
             url = new URL(url, window.location.origin).href;
           }
           
+          // Get the parent container for context
+          const parentContainer = element.closest('article, .article-item, [class*="article"], div, section, li');
+          
           // Check if this article might be from another author
           // Look for author attribution near the article link
-          const parentContainer = element.closest('div, article, section, li');
           let possibleAuthorText = '';
           if (parentContainer) {
             possibleAuthorText = parentContainer.textContent || '';
@@ -185,21 +198,178 @@ async function scrapeInfoWorldProfile(url) {
             }
           }
           
-          // Extract title
-          let title = element.querySelector('h2, h3, h4, [class*="title"], [class*="headline"]')?.textContent?.trim() ||
-                     element.getAttribute('title') ||
-                     element.textContent?.trim() ||
-                     'Untitled Article';
+          // Extract title - be more careful to get just the title
+          let title = '';
           
-          // Clean up title
-          title = title.replace(/Read more.*$/i, '').replace(/\s+/g, ' ').trim();
+          // First try to find a proper heading element within the parent container or link
+          const headingElement = parentContainer?.querySelector('h1, h2, h3, h4, h5, h6') || 
+                                element.querySelector('h1, h2, h3, h4, h5, h6');
+          if (headingElement) {
+            title = headingElement.textContent?.trim() || '';
+          }
           
-          // Extract description
-          let description = element.querySelector('[class*="summary"], [class*="excerpt"], [class*="description"], p')?.textContent?.trim() || '';
+          // If no heading, try title-specific classes
+          if (!title) {
+            const titleElement = parentContainer?.querySelector('[class*="title"], [class*="headline"]') ||
+                               element.querySelector('[class*="title"], [class*="headline"]');
+            if (titleElement) {
+              title = titleElement.textContent?.trim() || '';
+            }
+          }
           
-          // Extract date
-          let pubDate = element.querySelector('[class*="date"], time, [datetime]')?.textContent?.trim() ||
-                       element.querySelector('time')?.getAttribute('datetime') || '';
+          // If still no title, try the link's title attribute or aria-label
+          if (!title) {
+            title = element.getAttribute('title') || 
+                   element.getAttribute('aria-label') || 
+                   '';
+          }
+          
+          // Last resort: use the link text, but be careful
+          if (!title) {
+            title = element.textContent?.trim() || 'Untitled Article';
+          }
+          
+          // Clean up title - remove metadata that got included
+          // Remove "By [Author] [Date] [Time] [Categories]" patterns
+          title = title.replace(/^By\s+[\w\s]+\s+\w+\s+\d+,\s+\d{4}.*$/i, '').trim();
+          
+          // If title starts with metadata pattern, extract the real title after it
+          const metadataPattern = /^By\s+Sharon\s+Machlis\s+\w+\s+\d+,\s+\d{4}\s+\d+\s+mins?\s+(.+)/i;
+          const metadataMatch = title.match(metadataPattern);
+          if (metadataMatch && metadataMatch[1]) {
+            // The real title is after the metadata
+            title = metadataMatch[1].trim();
+            // Remove category tags that might be at the end
+            title = title.replace(/\s*(Generative AI|Natural Language Processing|R Language|Technology Industry|Developer|Analytics|Data Science|Programming|Software Development)$/gi, '').trim();
+          }
+          
+          // If the entire title is metadata, try to extract just the article title
+          if (title.match(/^By\s+Sharon\s+Machlis/i)) {
+            // This means we got the whole metadata block - try to find the actual title
+            const linkElement = element.tagName === 'A' ? element : element.querySelector('a');
+            if (linkElement) {
+              // Try to get the URL and extract a title from it
+              const urlParts = linkElement.href?.split('/');
+              if (urlParts && urlParts.length > 0) {
+                const slug = urlParts[urlParts.length - 1]?.replace('.html', '').replace(/-/g, ' ');
+                if (slug && !slug.match(/^\d+$/)) {
+                  // Convert slug to title case
+                  title = slug.split(' ').map(word => 
+                    word.charAt(0).toUpperCase() + word.slice(1).toLowerCase()
+                  ).join(' ');
+                }
+              }
+            }
+          }
+          
+          // Additional cleanup patterns
+          const cleanupPatterns = [
+            /^By\s+Sharon\s+Machlis\s*/i,  // Remove author byline at start
+            /\s*\d+\s+mins?\s*$/i,          // Remove reading time at end
+            /\s*\w+\s+\d+,\s+\d{4}\s*$/,   // Remove date at end
+            /\s*(Generative AI|Natural Language Processing|R Language|Technology Industry|Developer|Analytics|Data Science|Programming|Software Development|AI|Machine Learning|Cloud Computing|DevOps|Cybersecurity|Web Development|Mobile Development|Blockchain|IoT|Big Data)$/gi,  // Remove categories at end
+            /Read more.*$/i,                // Remove "Read more" text
+            /\s+/g                          // Normalize whitespace
+          ];
+          
+          cleanupPatterns.forEach(pattern => {
+            title = title.replace(pattern, ' ').trim();
+          });
+          
+          // Final cleanup - if title still contains metadata patterns, truncate at first occurrence
+          const metadataIndicators = [
+            /\s+\w+\s+\d+,\s+\d{4}/,  // Date pattern
+            /\s+\d+\s+mins?/i,         // Reading time
+            /\s+By\s+/i                // Author byline
+          ];
+          
+          for (const pattern of metadataIndicators) {
+            const match = title.match(pattern);
+            if (match && match.index && match.index > 10) {  // Keep at least 10 chars
+              title = title.substring(0, match.index).trim();
+            }
+          }
+          
+          // If title is too short or still looks like metadata, mark as untitled
+          if (title.length < 5 || title.match(/^\d+$/) || title.match(/^(By|mins?|Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)\s/i)) {
+            if (debugMode) {
+              console.log(`Warning: Could not extract proper title for ${url}, using fallback`);
+            }
+            title = 'Untitled Article';
+          }
+          
+          if (debugMode && title !== 'Untitled Article') {
+            console.log(`Extracted title: "${title.substring(0, 60)}..." from ${url}`);
+          }
+          
+          // Extract description - be more selective
+          let description = '';
+          
+          // Try to find a proper summary/excerpt element
+          const descSelectors = [
+            '[class*="summary"]',
+            '[class*="excerpt"]', 
+            '[class*="description"]',
+            '[class*="dek"]',
+            '[class*="standfirst"]',
+            '[class*="intro"]',
+            '[class*="abstract"]'
+          ];
+          
+          for (const selector of descSelectors) {
+            const descElement = parentContainer?.querySelector(selector) || 
+                              element.querySelector(selector);
+            if (descElement) {
+              description = descElement.textContent?.trim() || '';
+              if (description && description.length > 20) {
+                break;  // Found a good description
+              }
+            }
+          }
+          
+          // If no description found, try to get first paragraph
+          if (!description || description.length < 20) {
+            const paragraph = parentContainer?.querySelector('p') || 
+                            element.querySelector('p');
+            if (paragraph) {
+              description = paragraph.textContent?.trim() || '';
+            }
+          }
+          
+          // Clean up description - remove author/date metadata if present
+          description = description.replace(/^By\s+[\w\s]+\s+\w+\s+\d+,\s+\d{4}.*?(?=\w)/i, '').trim();
+          
+          // If description is too short or generic, leave it empty
+          if (description.length < 20 || 
+              description.toLowerCase().includes('click to read') ||
+              description.toLowerCase().includes('read more')) {
+            description = '';
+          }
+          
+          // Limit description length
+          if (description.length > 500) {
+            description = description.substring(0, 497) + '...';
+          }
+          
+          // Extract date - look for actual date information
+          let pubDate = '';
+          
+          // Try to find date in various formats
+          const dateElement = parentContainer?.querySelector('time, [datetime], [class*="date"], [class*="published"], [class*="timestamp"]') ||
+                            element.querySelector('time, [datetime], [class*="date"], [class*="published"], [class*="timestamp"]');
+          if (dateElement) {
+            // First check for datetime attribute (most reliable)
+            pubDate = dateElement.getAttribute('datetime') || dateElement.textContent?.trim() || '';
+          }
+          
+          // If no date element, look for date patterns in text
+          if (!pubDate && parentContainer) {
+            const datePattern = /(Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)\s+\d{1,2},\s+\d{4}/i;
+            const dateMatch = parentContainer.textContent?.match(datePattern);
+            if (dateMatch) {
+              pubDate = dateMatch[0];
+            }
+          }
           
           // Only add if we have a valid InfoWorld article URL
           if (url.includes('infoworld.com/article/')) {
@@ -220,7 +390,7 @@ async function scrapeInfoWorldProfile(url) {
       const uniqueArticles = Array.from(new Map(articleData.map(item => [item.url, item])).values());
       
       return uniqueArticles;
-    });
+    }, debugMode);  // Pass debugMode to the evaluate function
 
     console.log(`Extracted ${articles.length} unique articles`);
     
@@ -321,33 +491,58 @@ function generateRSS(articles, profileUrl) {
 
   articles.forEach((article, index) => {
     const title = escapeXml(article.title || `Article ${index + 1}`);
-    const description = escapeXml(article.description || 'Click to read the full article on InfoWorld.');
-    const author = escapeXml(article.author || 'Sharon Machlis');
     const url = escapeXml(article.url);
     
-    // Try to parse the date or use current date minus index days
+    // Handle description - if empty, provide a simple default
+    let description = article.description;
+    if (!description || description.length < 10) {
+      description = `Read the article "${article.title}" by Sharon Machlis on InfoWorld.`;
+    }
+    description = escapeXml(description);
+    
+    const author = escapeXml(article.author || 'Sharon Machlis');
+    
+    // Try to parse the date
     let pubDate = now;
     if (article.pubDate) {
       try {
-        const parsed = new Date(article.pubDate);
+        // Handle various date formats
+        let dateStr = article.pubDate;
+        
+        // If it's already a valid date string, use it
+        const parsed = new Date(dateStr);
         if (!isNaN(parsed.getTime())) {
           pubDate = parsed.toUTCString();
         } else {
-          // Fallback date
-          const date = new Date();
-          date.setDate(date.getDate() - index);
-          pubDate = date.toUTCString();
+          // Try to parse "Dec 19, 2024" format
+          const monthNames = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 
+                            'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+          const dateMatch = dateStr.match(/(\w+)\s+(\d{1,2}),\s+(\d{4})/);
+          if (dateMatch) {
+            const monthIndex = monthNames.indexOf(dateMatch[1]);
+            if (monthIndex !== -1) {
+              const constructedDate = new Date(
+                parseInt(dateMatch[3]), 
+                monthIndex, 
+                parseInt(dateMatch[2])
+              );
+              if (!isNaN(constructedDate.getTime())) {
+                pubDate = constructedDate.toUTCString();
+              }
+            }
+          }
         }
       } catch (e) {
-        // Fallback date
+        // If date parsing fails, use a staggered date based on index
+        // This maintains chronological order in the feed
         const date = new Date();
-        date.setDate(date.getDate() - index);
+        date.setDate(date.getDate() - (index * 7)); // Space articles by a week
         pubDate = date.toUTCString();
       }
     } else {
-      // Use date based on index to maintain order
+      // No date provided - use staggered dates
       const date = new Date();
-      date.setDate(date.getDate() - index);
+      date.setDate(date.getDate() - (index * 7)); // Space articles by a week
       pubDate = date.toUTCString();
     }
     
@@ -418,7 +613,17 @@ async function main() {
     articles.slice(0, 5).forEach((article, index) => {
       console.log(`${index + 1}. ${article.title}`);
       console.log(`   URL: ${article.url}`);
+      if (article.pubDate) {
+        console.log(`   Date: ${article.pubDate}`);
+      }
     });
+    
+    // Check for potential title extraction issues
+    const untitledCount = articles.filter(a => a.title === 'Untitled Article').length;
+    if (untitledCount > 0) {
+      console.log(`\n⚠️  Warning: ${untitledCount} articles had title extraction issues.`);
+      console.log('   Consider enabling DEBUG_MODE in scraper.js to see details.');
+    }
     
     console.log('\n✨ Done!');
     

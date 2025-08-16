@@ -1,4 +1,12 @@
 // scraper.js - GitHub Actions compatible version
+// 
+// CONFIGURATION:
+// - MAX_ARTICLES: Limits the number of articles to prevent including unrelated content
+//   from the bottom of the page. Adjust if you're missing articles or getting wrong ones.
+// - EXCLUDE_SECTIONS: CSS selectors for page sections to ignore (trending, related, etc.)
+//
+const MAX_ARTICLES = 30;  // Adjust this if needed
+
 const puppeteer = require('puppeteer');
 const fs = require('fs').promises;
 
@@ -33,108 +41,217 @@ async function scrapeInfoWorldProfile(url) {
       timeout: 60000 
     });
 
-    // A more reliable wait: wait for the main content column to appear.
+    // Wait 3 seconds for dynamic content to load
+    await new Promise(resolve => setTimeout(resolve, 3000));
+
+    // Try to wait for articles to load (with timeout catch)
     try {
-      await page.waitForSelector('div.main-col', { timeout: 10000 });
-      console.log('Main content column found.');
+      await page.waitForSelector('article, .article-item, [class*="article"], a[href*="/article/"]', {
+        timeout: 15000
+      });
     } catch (e) {
-      console.log('Main content column not found, proceeding anyway.');
+      console.log('Article selector timeout - continuing anyway');
     }
 
     // Scroll to load more content
     await autoScroll(page);
 
-    console.log('Extracting articles with robust fallback logic...');
+    console.log('Extracting articles...');
     
-    // ======================= ROBUST LOGIC START =======================
+    // Extract article data
     const articles = await page.evaluate(() => {
-      let articleData = [];
-
-      // --- Attempt 1: The Ideal, Specific Selector ---
-      let articleElements = document.querySelectorAll('div.main-col article.river-well');
-      console.log(`Attempt 1: Found ${articleElements.length} articles with 'div.main-col article.river-well'.`);
-
-      // --- Attempt 2: A Broader, More Flexible Selector ---
-      if (articleElements.length === 0) {
-        console.log("Attempt 1 failed. Trying a broader selector: 'article.river-well'.");
-        articleElements = document.querySelectorAll('article.river-well');
-        console.log(`Attempt 2: Found ${articleElements.length} articles with 'article.river-well'.`);
-      }
-
-      // If Attempts 1 or 2 succeeded, process the found elements
-      if (articleElements.length > 0) {
-        articleElements.forEach(element => {
-          try {
-            const urlElement = element.querySelector('h3 a, h2 a');
-            const url = urlElement ? new URL(urlElement.href, window.location.origin).href : null;
-            
-            if (!url || !url.includes('infoworld.com/article/')) return;
-
-            // Only add articles by the correct author from the byline
-            const authorElement = element.querySelector('.byline a');
-            if (!authorElement || !authorElement.textContent.trim().includes('Sharon Machlis')) {
-                return; // Skip if author is not Sharon Machlis
+      const articleData = [];
+      
+      // First, identify and exclude sections that typically contain other authors' content
+      const excludeSections = [
+        '[class*="trending"]',
+        '[class*="popular"]',
+        '[class*="more-from"]',
+        '[class*="related"]',
+        '[class*="recommended"]',
+        'aside',
+        'footer',
+        '[data-section="trending"]',
+        '[data-section="popular"]',
+        '[class*="sidebar"]'
+      ];
+      
+      // Get all excluded elements
+      const excludedElements = new Set();
+      excludeSections.forEach(selector => {
+        try {
+          const sections = document.querySelectorAll(selector);
+          sections.forEach(section => {
+            // Mark all links within these sections as excluded
+            const links = section.querySelectorAll('a');
+            links.forEach(link => excludedElements.add(link));
+          });
+        } catch (e) {
+          // Selector might not exist, that's OK
+        }
+      });
+      
+      console.log(`Found ${excludedElements.size} links in excluded sections`);
+      
+      // Try multiple possible selectors for articles
+      const selectors = [
+        'main article a[href*="/article/"]',
+        'main .article-item',
+        'main [class*="article-list"] a[href*="/article/"]',
+        '[class*="author-articles"] a[href*="/article/"]',
+        '[class*="profile"] a[href*="/article/"]',
+        'section:not(aside) a[href*="/article/"]',
+        'a[href*="/article/"]'
+      ];
+      
+      let elements = new Set();
+      for (const selector of selectors) {
+        try {
+          const found = document.querySelectorAll(selector);
+          found.forEach(el => {
+            // Only add if not in excluded sections
+            if (!excludedElements.has(el)) {
+              elements.add(el);
             }
-
-            const title = urlElement ? urlElement.textContent.trim() : 'Untitled Article';
-            const description = element.querySelector('.post-excerpt p')?.textContent?.trim() || '';
-            const pubDate = element.querySelector('.pub-date time')?.getAttribute('datetime') || 
-                            element.querySelector('.pub-date')?.textContent?.trim() || '';
-            
-            articleData.push({ title, url, description, pubDate, author: 'Sharon Machlis' });
-          } catch (err) {
-            console.error('Error processing an article element:', err.message);
-          }
-        });
-      }
-
-      // --- Attempt 3: The Failsafe - Grab All Article Links ---
-      if (articleData.length === 0) {
-        console.log("Attempts 1 & 2 failed. Trying failsafe: find all article links and reconstruct data.");
-        const allLinks = document.querySelectorAll('a[href*="/article/"]');
-        console.log(`Attempt 3: Found ${allLinks.length} potential article links.`);
-        
-        allLinks.forEach(link => {
-            try {
-                const url = new URL(link.href, window.location.origin).href;
-                if (!url.includes('infoworld.com/article/')) return;
-
-                // To avoid grabbing unrelated articles, we check the context of the link.
-                // We assume if the link is inside a container with your name, it's yours.
-                // This is a heuristic, but it's our best last-ditch effort.
-                const parentArticle = link.closest('article, .story, .river-well, .content-item');
-                if (parentArticle) {
-                    const authorElement = parentArticle.querySelector('.byline a');
-                    if (authorElement && !authorElement.textContent.trim().includes('Sharon Machlis')) {
-                        return; // It's an article, but not yours.
-                    }
-                }
-
-                const title = link.textContent?.trim().replace(/\s+/g, ' ') || 'Untitled Article';
-                // Description and Date are hard to get reliably this way, so we leave them blank.
-                if (title && title.length > 5) { // Basic filter for valid titles
-                    articleData.push({ title, url, description: '', pubDate: '', author: 'Sharon Machlis' });
-                }
-            } catch(e) {
-                // Ignore errors on invalid links
-            }
-        });
+          });
+        } catch (e) {
+          console.log(`Selector failed: ${selector}`);
+        }
       }
       
-      // Remove duplicates based on URL - crucial for the failsafe method
+      // Convert Set to Array
+      const uniqueElements = Array.from(elements);
+      console.log(`Found ${uniqueElements.length} potential article elements after exclusions`);
+      
+      uniqueElements.forEach(element => {
+        try {
+          // Get the link
+          let url = element.href || element.querySelector('a')?.href;
+          if (!url && element.tagName === 'A') {
+            url = element.getAttribute('href');
+          }
+          
+          // Skip if not an article URL
+          if (!url || !url.includes('/article/')) {
+            return;
+          }
+          
+          // Make URL absolute
+          if (!url.startsWith('http')) {
+            url = new URL(url, window.location.origin).href;
+          }
+          
+          // Check if this article might be from another author
+          // Look for author attribution near the article link
+          const parentContainer = element.closest('div, article, section, li');
+          let possibleAuthorText = '';
+          if (parentContainer) {
+            possibleAuthorText = parentContainer.textContent || '';
+            
+            // Check for common patterns indicating other authors
+            const otherAuthorPatterns = [
+              /by\s+(?!Sharon\s+Machlis)[\w\s]+/i,  // "by [Not Sharon Machlis]"
+              /author:\s*(?!Sharon\s+Machlis)[\w\s]+/i,
+              /from\s+(?!Sharon\s+Machlis)[\w\s]+/i
+            ];
+            
+            // Skip if we detect another author's name
+            for (const pattern of otherAuthorPatterns) {
+              if (pattern.test(possibleAuthorText)) {
+                console.log(`Skipping article with different author: ${url}`);
+                return;
+              }
+            }
+            
+            // Skip if the container has text suggesting it's from a different section
+            const skipPhrases = [
+              'more from infoworld',
+              'trending',
+              'popular',
+              'recommended',
+              'you might also like',
+              'related articles',
+              'also on infoworld',
+              'from our partners',
+              'sponsored'
+            ];
+            
+            const containerTextLower = possibleAuthorText.toLowerCase();
+            for (const phrase of skipPhrases) {
+              if (containerTextLower.includes(phrase)) {
+                console.log(`Skipping article from "${phrase}" section: ${url}`);
+                return;
+              }
+            }
+          }
+          
+          // Extract title
+          let title = element.querySelector('h2, h3, h4, [class*="title"], [class*="headline"]')?.textContent?.trim() ||
+                     element.getAttribute('title') ||
+                     element.textContent?.trim() ||
+                     'Untitled Article';
+          
+          // Clean up title
+          title = title.replace(/Read more.*$/i, '').replace(/\s+/g, ' ').trim();
+          
+          // Extract description
+          let description = element.querySelector('[class*="summary"], [class*="excerpt"], [class*="description"], p')?.textContent?.trim() || '';
+          
+          // Extract date
+          let pubDate = element.querySelector('[class*="date"], time, [datetime]')?.textContent?.trim() ||
+                       element.querySelector('time')?.getAttribute('datetime') || '';
+          
+          // Only add if we have a valid InfoWorld article URL
+          if (url.includes('infoworld.com/article/')) {
+            articleData.push({
+              title: title.substring(0, 200),
+              url: url,
+              description: description.substring(0, 500),
+              pubDate: pubDate,
+              author: 'Sharon Machlis'
+            });
+          }
+        } catch (err) {
+          console.error('Error processing element:', err.message);
+        }
+      });
+      
+      // Remove duplicates based on URL
       const uniqueArticles = Array.from(new Map(articleData.map(item => [item.url, item])).values());
+      
       return uniqueArticles;
     });
-    // ======================= ROBUST LOGIC END =======================
 
-    console.log(`Extracted ${articles.length} unique articles.`);
+    console.log(`Extracted ${articles.length} unique articles`);
     
-    if (articles.length === 0) {
-      console.log('All scraping attempts failed. The website may have fundamentally changed.');
-      return [];
+    // Limit to first MAX_ARTICLES to avoid including unrelated content at the bottom
+    const limitedArticles = articles.slice(0, MAX_ARTICLES);
+    
+    if (limitedArticles.length < articles.length) {
+      console.log(`Limited to first ${MAX_ARTICLES} articles (excluded ${articles.length - MAX_ARTICLES} articles)`);
     }
     
-    return articles.slice(0, 50); // Limit to 50 most recent articles
+    // If no articles found with specific selectors, try a more general approach
+    if (limitedArticles.length === 0) {
+      console.log('Trying alternative extraction method...');
+      const maxArticles = MAX_ARTICLES; // Pass the constant value
+      const allLinks = await page.evaluate((maxArticles) => {
+        const links = Array.from(document.querySelectorAll('a[href*="/article/"]'));
+        return links.map(link => ({
+          title: link.textContent?.trim() || link.getAttribute('title') || 'Article',
+          url: link.href,
+          description: '',
+          pubDate: '',
+          author: 'Sharon Machlis'
+        })).filter(item => item.url && item.url.includes('infoworld.com/article/')).slice(0, maxArticles);
+      }, maxArticles);
+      
+      // Remove duplicates
+      const uniqueLinks = Array.from(new Map(allLinks.map(item => [item.url, item])).values());
+      return uniqueLinks;
+    }
+    
+    return limitedArticles;
 
   } catch (error) {
     console.error('Error during scraping:', error.message);
@@ -146,7 +263,7 @@ async function scrapeInfoWorldProfile(url) {
   }
 }
 
-// Helper function to scroll the page (unchanged)
+// Helper function to scroll the page
 async function autoScroll(page) {
   await page.evaluate(async () => {
     await new Promise((resolve) => {
@@ -174,10 +291,11 @@ async function autoScroll(page) {
   });
 }
 
-// Generate RSS XML from articles (unchanged)
+// Generate RSS XML from articles
 function generateRSS(articles, profileUrl) {
   const now = new Date().toUTCString();
   
+  // Escape XML special characters
   const escapeXml = (text) => {
     if (!text) return '';
     return text
@@ -198,7 +316,7 @@ function generateRSS(articles, profileUrl) {
     <lastBuildDate>${now}</lastBuildDate>
     <generator>GitHub Actions RSS Generator</generator>
     <ttl>10080</ttl>
-    <atom:link href="https://raw.githubusercontent.com/smachlis/infoworld-rss/main/feed.xml" rel="self" type="application/rss+xml" />
+    <atom:link href="https://raw.githubusercontent.com/YOUR_USERNAME/YOUR_REPO/main/feed.xml" rel="self" type="application/rss+xml" />
 `;
 
   articles.forEach((article, index) => {
@@ -207,6 +325,7 @@ function generateRSS(articles, profileUrl) {
     const author = escapeXml(article.author || 'Sharon Machlis');
     const url = escapeXml(article.url);
     
+    // Try to parse the date or use current date minus index days
     let pubDate = now;
     if (article.pubDate) {
       try {
@@ -214,16 +333,19 @@ function generateRSS(articles, profileUrl) {
         if (!isNaN(parsed.getTime())) {
           pubDate = parsed.toUTCString();
         } else {
+          // Fallback date
           const date = new Date();
           date.setDate(date.getDate() - index);
           pubDate = date.toUTCString();
         }
       } catch (e) {
+        // Fallback date
         const date = new Date();
         date.setDate(date.getDate() - index);
         pubDate = date.toUTCString();
       }
     } else {
+      // Use date based on index to maintain order
       const date = new Date();
       date.setDate(date.getDate() - index);
       pubDate = date.toUTCString();
@@ -247,7 +369,7 @@ function generateRSS(articles, profileUrl) {
   return rssContent;
 }
 
-// Main function (unchanged)
+// Main function
 async function main() {
   const profileUrl = 'https://www.infoworld.com/profile/sharon-machlis/';
   
@@ -259,20 +381,38 @@ async function main() {
     console.log(`Time: ${new Date().toISOString()}`);
     console.log('');
     
+    // Scrape articles
     const articles = await scrapeInfoWorldProfile(profileUrl);
     
     if (!articles || articles.length === 0) {
-      console.error('⚠️  No articles found. The page structure might have changed or there were no articles by the specified author.');
-      process.exit(0); 
+      console.error('⚠️  No articles found. The page structure might have changed.');
+      console.log('Creating minimal RSS feed...');
+      
+      // Create a minimal RSS feed even if no articles found
+      const minimalRss = generateRSS([{
+        title: 'Feed Generation Notice',
+        url: profileUrl,
+        description: 'The RSS feed generator could not find articles. Please check the source page.',
+        pubDate: new Date().toUTCString(),
+        author: 'System'
+      }], profileUrl);
+      
+      await fs.writeFile('feed.xml', minimalRss, 'utf8');
+      console.log('Minimal feed created.');
+      process.exit(0);
     }
     
+    // Generate RSS
     const rssContent = generateRSS(articles, profileUrl);
+    
+    // Save to feed.xml
     await fs.writeFile('feed.xml', rssContent, 'utf8');
     
     console.log('✅ RSS feed generated successfully!');
     console.log(`📄 Saved to: feed.xml`);
     console.log(`📊 Total articles: ${articles.length}`);
     
+    // Print first few articles for verification
     console.log('\n📰 First 5 articles in the feed:');
     console.log('-'.repeat(50));
     articles.slice(0, 5).forEach((article, index) => {
@@ -286,6 +426,7 @@ async function main() {
     console.error('❌ Error generating RSS feed:', error.message);
     console.error(error.stack);
     
+    // Create error RSS feed
     const errorRss = `<?xml version="1.0" encoding="UTF-8"?>
 <rss version="2.0">
   <channel>

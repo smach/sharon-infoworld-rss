@@ -1,0 +1,65 @@
+# .github/workflows/generate-rss.yml
+name: Generate InfoWorld RSS Feed
+
+on:
+  schedule:
+    # Run every Thursday at 8 AM Eastern Time
+    # Note: GitHub Actions uses UTC time
+    # 12:00 UTC = 8:00 AM EDT (summer) / 7:00 AM EST (winter)
+    # 13:00 UTC = 9:00 AM EDT (summer) / 8:00 AM EST (winter)
+    # Using 12:00 UTC for 8 AM during most of the year (EDT)
+    - cron: '0 12 * * 4'
+  
+  # Allow manual trigger from GitHub Actions tab
+  workflow_dispatch:
+  
+  # Run on push to main branch (for testing)
+  push:
+    branches:
+      - main
+    paths:
+      - 'scraper.js'
+      - '.github/workflows/generate-rss.yml'
+
+jobs:
+  generate-rss:
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v4
+      with:
+        token: ${{ secrets.GITHUB_TOKEN }}
+    
+    - name: Setup Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: '20'
+        cache: 'npm'
+    
+    - name: Install dependencies
+      run: |
+        npm init -y
+        npm install puppeteer
+    
+    - name: Run RSS generator
+      run: node scraper.js
+    
+    - name: Check if RSS was generated
+      id: check_file
+      run: |
+        if [ -f "feed.xml" ]; then
+          echo "rss_exists=true" >> $GITHUB_OUTPUT
+          echo "RSS feed generated successfully"
+        else
+          echo "rss_exists=false" >> $GITHUB_OUTPUT
+          echo "RSS feed was not generated"
+        fi
+    
+    - name: Commit and push RSS feed
+      if: steps.check_file.outputs.rss_exists == 'true'
+      run: |
+        git config --local user.email "action@github.com"
+        git config --local user.name "GitHub Action"
+        git add feed.xml
+        git diff --quiet && git diff --staged --quiet || (git commit -m "Update RSS feed [skip ci]" && git push)

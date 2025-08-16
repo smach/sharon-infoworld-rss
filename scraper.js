@@ -1,6 +1,6 @@
 // scraper.js - GitHub Actions compatible version
 // 
-// This scraper generates an RSS feed from InfoWorld author Sharon Machlis's profile page.
+// This scraper generates an RSS feed from Sharon Machlis's InfoWorld author profile page.
 // It handles JavaScript-rendered content and filters out unrelated articles.
 //
 // KEY FEATURES:
@@ -210,8 +210,8 @@ async function scrapeInfoWorldProfile(url) {
           
           // If no heading, try title-specific classes
           if (!title) {
-            const titleElement = parentContainer?.querySelector('[class*="title"], [class*="headline"]') ||
-                               element.querySelector('[class*="title"], [class*="headline"]');
+            const titleElement = parentContainer?.querySelector('[class*="title"]:not([class*="subtitle"]), [class*="headline"]') ||
+                               element.querySelector('[class*="title"]:not([class*="subtitle"]), [class*="headline"]');
             if (titleElement) {
               title = titleElement.textContent?.trim() || '';
             }
@@ -224,9 +224,16 @@ async function scrapeInfoWorldProfile(url) {
                    '';
           }
           
-          // Last resort: use the link text, but be careful
-          if (!title) {
-            title = element.textContent?.trim() || 'Untitled Article';
+          // If still no title but we have text content, use it carefully
+          if (!title && element.textContent) {
+            const linkText = element.textContent.trim();
+            // Only use link text if it looks like a title (not metadata)
+            if (linkText && 
+                !linkText.match(/^By\s+/i) && 
+                !linkText.match(/^\d+\s+mins?/i) &&
+                !linkText.match(/^(Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)\s+\d+/i)) {
+              title = linkText;
+            }
           }
           
           // Clean up title - remove metadata that got included
@@ -267,7 +274,6 @@ async function scrapeInfoWorldProfile(url) {
             /^By\s+Sharon\s+Machlis\s*/i,  // Remove author byline at start
             /\s*\d+\s+mins?\s*$/i,          // Remove reading time at end
             /\s*\w+\s+\d+,\s+\d{4}\s*$/,   // Remove date at end
-            /\s*(Generative AI|Natural Language Processing|R Language|Technology Industry|Developer|Analytics|Data Science|Programming|Software Development|AI|Machine Learning|Cloud Computing|DevOps|Cybersecurity|Web Development|Mobile Development|Blockchain|IoT|Big Data)$/gi,  // Remove categories at end
             /Read more.*$/i,                // Remove "Read more" text
             /\s+/g                          // Normalize whitespace
           ];
@@ -290,15 +296,28 @@ async function scrapeInfoWorldProfile(url) {
             }
           }
           
-          // If title is too short or still looks like metadata, mark as untitled
-          if (title.length < 5 || title.match(/^\d+$/) || title.match(/^(By|mins?|Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)\s/i)) {
-            if (debugMode) {
-              console.log(`Warning: Could not extract proper title for ${url}, using fallback`);
+          // Final validation - only mark as untitled if we really couldn't find anything
+          if (!title || title.length < 3 || title.match(/^\d+$/)) {
+            // Last attempt: clean up the URL slug
+            const urlMatch = url.match(/\/([^\/]+)\.html$/);
+            if (urlMatch && urlMatch[1]) {
+              title = urlMatch[1]
+                .replace(/-/g, ' ')
+                .replace(/\b\w/g, char => char.toUpperCase())
+                .replace(/\d+$/, '')  // Remove trailing numbers
+                .trim();
             }
-            title = 'Untitled Article';
+            
+            // If still no good title, mark as untitled
+            if (!title || title.length < 3) {
+              title = 'Article';  // Better than "Untitled Article"
+              if (debugMode) {
+                console.log(`Warning: Could not extract title for ${url}`);
+              }
+            }
           }
           
-          if (debugMode && title !== 'Untitled Article') {
+          if (debugMode && title !== 'Article') {
             console.log(`Extracted title: "${title.substring(0, 60)}..." from ${url}`);
           }
           
@@ -493,10 +512,17 @@ function generateRSS(articles, profileUrl) {
     const title = escapeXml(article.title || `Article ${index + 1}`);
     const url = escapeXml(article.url);
     
-    // Handle description - if empty, provide a simple default
+    // Handle description - if empty or generic, provide a better default
     let description = article.description;
-    if (!description || description.length < 10) {
-      description = `Read the article "${article.title}" by Sharon Machlis on InfoWorld.`;
+    if (!description || description.length < 10 || 
+        description.toLowerCase().includes('click to read') ||
+        description.toLowerCase().includes('read the article')) {
+      // Create a more informative default description
+      if (article.title && article.title !== 'Article') {
+        description = `Read "${article.title}" by Sharon Machlis on InfoWorld.`;
+      } else {
+        description = `Read this article by Sharon Machlis on InfoWorld.`;
+      }
     }
     description = escapeXml(description);
     
@@ -619,9 +645,9 @@ async function main() {
     });
     
     // Check for potential title extraction issues
-    const untitledCount = articles.filter(a => a.title === 'Untitled Article').length;
-    if (untitledCount > 0) {
-      console.log(`\n⚠️  Warning: ${untitledCount} articles had title extraction issues.`);
+    const problemCount = articles.filter(a => a.title === 'Article' || a.title.includes('Untitled')).length;
+    if (problemCount > 0) {
+      console.log(`\n⚠️  Warning: ${problemCount} articles had title extraction issues.`);
       console.log('   Consider enabling DEBUG_MODE in scraper.js to see details.');
     }
     

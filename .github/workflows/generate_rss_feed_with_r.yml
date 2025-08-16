@@ -82,7 +82,7 @@ jobs:
           libjpeg-dev
     
     - name: Cache R packages
-      uses: actions/cache@v3
+      uses: actions/cache@v4
       with:
         path: ${{ env.R_LIBS_USER }}
         key: ${{ runner.os }}-r-${{ hashFiles('scraper.R') }}
@@ -194,7 +194,7 @@ jobs:
         fi
 
     - name: Upload RSS feed as artifact
-      uses: actions/upload-artifact@v3
+      uses: actions/upload-artifact@v4
       if: always()
       with:
         name: rss-feed

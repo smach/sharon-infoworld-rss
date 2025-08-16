@@ -5,7 +5,7 @@
     <link>https://www.infoworld.com/profile/sharon-machlis/</link>
     <description>Latest articles by Sharon Machlis on InfoWorld - Automatically generated RSS feed</description>
     <language>en-us</language>
-    <lastBuildDate>Sat, 16 Aug 2025 03:35:52 GMT</lastBuildDate>
+    <lastBuildDate>Sat, 16 Aug 2025 18:41:55 GMT</lastBuildDate>
     <generator>GitHub Actions RSS Generator</generator>
     <ttl>10080</ttl>
     <atom:link href="https://raw.githubusercontent.com/YOUR_USERNAME/YOUR_REPO/main/feed.xml" rel="self" type="application/rss+xml" />
@@ -15,7 +15,7 @@
       <link>https://www.infoworld.com/article/2262286/do-more-with-r-video-tutorials.html</link>
       <description><![CDATA[Sharon Machlis was a longtime writer and editor at Computerworld and later the Director of Editorial Data &amp; Analytics at parent company Foundry. She is also the author of Practical R for Mass Communications and Journalism.]]></description>
       <dc:creator>Sharon Machlis</dc:creator>
-      <pubDate>Sat, 16 Aug 2025 03:35:52 GMT</pubDate>
+      <pubDate>Sat, 16 Aug 2025 18:41:55 GMT</pubDate>
       <guid isPermaLink="true">https://www.infoworld.com/article/2262286/do-more-with-r-video-tutorials.html</guid>
     </item>
     <item>
@@ -89,6 +89,14 @@
       <dc:creator>Sharon Machlis</dc:creator>
       <pubDate>Thu, 15 Feb 2024 00:00:00 GMT</pubDate>
       <guid isPermaLink="true">https://www.infoworld.com/article/2267616/how-to-run-r-in-visual-studio-code.html</guid>
+    </item>
+    <item>
+      <title>Posit Lays Off R Markdown Knitr Creator Yihui Xie</title>
+      <link>https://www.infoworld.com/article/2335751/posit-lays-off-r-markdown-knitr-creator-yihui-xie.html</link>
+      <description><![CDATA[Read &quot;Posit Lays Off R Markdown Knitr Creator Yihui Xie&quot; by Sharon Machlis on InfoWorld.]]></description>
+      <dc:creator>Sharon Machlis</dc:creator>
+      <pubDate>Fri, 05 Jan 2024 00:00:00 GMT</pubDate>
+      <guid isPermaLink="true">https://www.infoworld.com/article/2335751/posit-lays-off-r-markdown-knitr-creator-yihui-xie.html</guid>
     </item>
   </channel>
 </rss>

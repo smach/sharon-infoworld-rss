@@ -1,4 +1,4 @@
-// scraper.js - GitHub Actions compatible version
+// scraper.js - GitHub Actions compatible version rewritten by Gemini
 const puppeteer = require('puppeteer');
 const fs = require('fs').promises;
 
@@ -33,126 +33,74 @@ async function scrapeInfoWorldProfile(url) {
       timeout: 60000 
     });
 
-    // Wait 3 seconds for dynamic content to load
+    // Wait for dynamic content to load if needed
     await new Promise(resolve => setTimeout(resolve, 3000));
-
-    // Try to wait for articles to load (with timeout catch)
-    try {
-      await page.waitForSelector('article, .article-item, [class*="article"], a[href*="/article/"]', {
-        timeout: 15000
-      });
-    } catch (e) {
-      console.log('Article selector timeout - continuing anyway');
-    }
 
     // Scroll to load more content
     await autoScroll(page);
 
     console.log('Extracting articles...');
     
-    // Extract article data
+    // Extract article data with refined logic
     const articles = await page.evaluate(() => {
       const articleData = [];
       
-      // Try multiple possible selectors
-      const selectors = [
-        'article a[href*="/article/"]',
-        '.article-item',
-        '[class*="article-list"] a[href*="/article/"]',
-        'main a[href*="/article/"]',
-        'a[href*="/article/"]',
-        '.content-item',
-        '[class*="story"]'
-      ];
+      // ======================= REFINED LOGIC START =======================
+
+      // 1. Use a more specific selector to target only the main article list.
+      // This avoids picking up "featured" or "related" articles in other sections.
+      const articleElements = document.querySelectorAll('main .river-well.blog.post');
       
-      let elements = new Set();
-      for (const selector of selectors) {
+      console.log(`Found ${articleElements.length} potential article elements in the main list.`);
+
+      articleElements.forEach(element => {
         try {
-          const found = document.querySelectorAll(selector);
-          found.forEach(el => elements.add(el));
-        } catch (e) {
-          console.log(`Selector failed: ${selector}`);
-        }
-      }
-      
-      // Convert Set to Array
-      const uniqueElements = Array.from(elements);
-      console.log(`Found ${uniqueElements.length} potential article elements`);
-      
-      uniqueElements.forEach(element => {
-        try {
-          // Get the link
-          let url = element.href || element.querySelector('a')?.href;
-          if (!url && element.tagName === 'A') {
-            url = element.getAttribute('href');
-          }
-          
-          // Skip if not an article URL
-          if (!url || !url.includes('/article/')) {
-            return;
-          }
-          
-          // Make URL absolute
-          if (!url.startsWith('http')) {
-            url = new URL(url, window.location.origin).href;
-          }
-          
-          // Extract title
-          let title = element.querySelector('h2, h3, h4, [class*="title"], [class*="headline"]')?.textContent?.trim() ||
-                     element.getAttribute('title') ||
-                     element.textContent?.trim() ||
-                     'Untitled Article';
-          
-          // Clean up title
-          title = title.replace(/Read more.*$/i, '').replace(/\s+/g, ' ').trim();
-          
-          // Extract description
-          let description = element.querySelector('[class*="summary"], [class*="excerpt"], [class*="description"], p')?.textContent?.trim() || '';
-          
-          // Extract date
-          let pubDate = element.querySelector('[class*="date"], time, [datetime]')?.textContent?.trim() ||
-                       element.querySelector('time')?.getAttribute('datetime') || '';
-          
-          // Only add if we have a valid InfoWorld article URL
-          if (url.includes('infoworld.com/article/')) {
+          // 2. Verify the author's name before processing the article.
+          const authorElement = element.querySelector('.byline a');
+          const authorName = authorElement ? authorElement.textContent.trim() : '';
+
+          // Only proceed if the author is Sharon Machlis
+          if (authorName.includes('Sharon Machlis')) {
+            const urlElement = element.querySelector('h3 a, h2 a'); // Article title is in an h3 or h2
+            const url = urlElement ? new URL(urlElement.href, window.location.origin).href : null;
+            
+            // Skip if a valid URL isn't found
+            if (!url || !url.includes('infoworld.com/article/')) {
+              return;
+            }
+
+            const title = urlElement ? urlElement.textContent.trim() : 'Untitled Article';
+            const description = element.querySelector('.post-excerpt p')?.textContent?.trim() || '';
+            const pubDate = element.querySelector('.pub-date time')?.getAttribute('datetime') || 
+                            element.querySelector('.pub-date')?.textContent?.trim() || '';
+            
             articleData.push({
               title: title.substring(0, 200),
               url: url,
               description: description.substring(0, 500),
               pubDate: pubDate,
-              author: 'Sharon Machlis'
+              author: 'Sharon Machlis' // Now we know it's the correct author
             });
           }
         } catch (err) {
-          console.error('Error processing element:', err.message);
+          console.error('Error processing a potential article element:', err.message);
         }
       });
+
+      // ======================= REFINED LOGIC END =======================
       
-      // Remove duplicates based on URL
+      // Remove duplicates based on URL (this is good practice to keep)
       const uniqueArticles = Array.from(new Map(articleData.map(item => [item.url, item])).values());
       
       return uniqueArticles;
     });
 
-    console.log(`Extracted ${articles.length} unique articles`);
+    console.log(`Extracted ${articles.length} unique articles by Sharon Machlis`);
     
-    // If no articles found with specific selectors, try a more general approach
+    // Keep this fallback, but it's less likely to be needed now
     if (articles.length === 0) {
-      console.log('Trying alternative extraction method...');
-      const allLinks = await page.evaluate(() => {
-        const links = Array.from(document.querySelectorAll('a[href*="/article/"]'));
-        return links.map(link => ({
-          title: link.textContent?.trim() || link.getAttribute('title') || 'Article',
-          url: link.href,
-          description: '',
-          pubDate: '',
-          author: 'Sharon Machlis'
-        })).filter(item => item.url && item.url.includes('infoworld.com/article/'));
-      });
-      
-      // Remove duplicates
-      const uniqueLinks = Array.from(new Map(allLinks.map(item => [item.url, item])).values());
-      return uniqueLinks.slice(0, 50); // Limit to 50 most recent
+      console.log('No articles found with the primary method. The page structure might have changed.');
+      return [];
     }
     
     return articles.slice(0, 50); // Limit to 50 most recent articles
@@ -167,7 +115,7 @@ async function scrapeInfoWorldProfile(url) {
   }
 }
 
-// Helper function to scroll the page
+// Helper function to scroll the page (unchanged)
 async function autoScroll(page) {
   await page.evaluate(async () => {
     await new Promise((resolve) => {
@@ -195,11 +143,10 @@ async function autoScroll(page) {
   });
 }
 
-// Generate RSS XML from articles
+// Generate RSS XML from articles (unchanged)
 function generateRSS(articles, profileUrl) {
   const now = new Date().toUTCString();
   
-  // Escape XML special characters
   const escapeXml = (text) => {
     if (!text) return '';
     return text
@@ -220,7 +167,7 @@ function generateRSS(articles, profileUrl) {
     <lastBuildDate>${now}</lastBuildDate>
     <generator>GitHub Actions RSS Generator</generator>
     <ttl>10080</ttl>
-    <atom:link href="https://raw.githubusercontent.com/YOUR_USERNAME/YOUR_REPO/main/feed.xml" rel="self" type="application/rss+xml" />
+    <atom:link href="https://raw.githubusercontent.com/smachlis/infoworld-rss/main/feed.xml" rel="self" type="application/rss+xml" />
 `;
 
   articles.forEach((article, index) => {
@@ -229,7 +176,6 @@ function generateRSS(articles, profileUrl) {
     const author = escapeXml(article.author || 'Sharon Machlis');
     const url = escapeXml(article.url);
     
-    // Try to parse the date or use current date minus index days
     let pubDate = now;
     if (article.pubDate) {
       try {
@@ -237,19 +183,16 @@ function generateRSS(articles, profileUrl) {
         if (!isNaN(parsed.getTime())) {
           pubDate = parsed.toUTCString();
         } else {
-          // Fallback date
           const date = new Date();
           date.setDate(date.getDate() - index);
           pubDate = date.toUTCString();
         }
       } catch (e) {
-        // Fallback date
         const date = new Date();
         date.setDate(date.getDate() - index);
         pubDate = date.toUTCString();
       }
     } else {
-      // Use date based on index to maintain order
       const date = new Date();
       date.setDate(date.getDate() - index);
       pubDate = date.toUTCString();
@@ -273,7 +216,7 @@ function generateRSS(articles, profileUrl) {
   return rssContent;
 }
 
-// Main function
+// Main function (unchanged, but added a check for an empty articles array)
 async function main() {
   const profileUrl = 'https://www.infoworld.com/profile/sharon-machlis/';
   
@@ -285,38 +228,22 @@ async function main() {
     console.log(`Time: ${new Date().toISOString()}`);
     console.log('');
     
-    // Scrape articles
     const articles = await scrapeInfoWorldProfile(profileUrl);
     
     if (!articles || articles.length === 0) {
-      console.error('⚠️  No articles found. The page structure might have changed.');
-      console.log('Creating minimal RSS feed...');
-      
-      // Create a minimal RSS feed even if no articles found
-      const minimalRss = generateRSS([{
-        title: 'Feed Generation Notice',
-        url: profileUrl,
-        description: 'The RSS feed generator could not find articles. Please check the source page.',
-        pubDate: new Date().toUTCString(),
-        author: 'System'
-      }], profileUrl);
-      
-      await fs.writeFile('feed.xml', minimalRss, 'utf8');
-      console.log('Minimal feed created.');
-      process.exit(0);
+      console.error('⚠️  No articles found. The page structure might have changed or there were no articles by the specified author.');
+      // Exit gracefully without creating an error feed if no articles were found.
+      // You can decide to create a minimal feed here if you prefer.
+      process.exit(0); 
     }
     
-    // Generate RSS
     const rssContent = generateRSS(articles, profileUrl);
-    
-    // Save to feed.xml
     await fs.writeFile('feed.xml', rssContent, 'utf8');
     
     console.log('✅ RSS feed generated successfully!');
     console.log(`📄 Saved to: feed.xml`);
     console.log(`📊 Total articles: ${articles.length}`);
     
-    // Print first few articles for verification
     console.log('\n📰 First 5 articles in the feed:');
     console.log('-'.repeat(50));
     articles.slice(0, 5).forEach((article, index) => {
@@ -330,7 +257,6 @@ async function main() {
     console.error('❌ Error generating RSS feed:', error.message);
     console.error(error.stack);
     
-    // Create error RSS feed
     const errorRss = `<?xml version="1.0" encoding="UTF-8"?>
 <rss version="2.0">
   <channel>

@@ -5,7 +5,7 @@
     <link>https://www.infoworld.com/profile/sharon-machlis/</link>
     <description>Latest articles by Sharon Machlis on InfoWorld - Automatically generated RSS feed</description>
     <language>en-us</language>
-    <lastBuildDate>Thu, 19 Feb 2026 12:20:55 GMT</lastBuildDate>
+    <lastBuildDate>Thu, 26 Feb 2026 12:21:55 GMT</lastBuildDate>
     <generator>GitHub Actions RSS Generator</generator>
     <ttl>10080</ttl>
     <atom:link href="https://raw.githubusercontent.com/YOUR_USERNAME/YOUR_REPO/main/feed.xml" rel="self" type="application/rss+xml" />
@@ -15,8 +15,24 @@
       <link>https://www.infoworld.com/article/2262286/do-more-with-r-video-tutorials.html</link>
       <description><![CDATA[Sharon Machlis was a longtime writer and editor at Computerworld and later the Director of Editorial Data &amp; Analytics at parent company Foundry. She is also the author of Practical R for Mass Communications and Journalism.]]></description>
       <dc:creator>Sharon Machlis</dc:creator>
-      <pubDate>Thu, 19 Feb 2026 12:20:55 GMT</pubDate>
+      <pubDate>Thu, 26 Feb 2026 12:21:55 GMT</pubDate>
       <guid isPermaLink="true">https://www.infoworld.com/article/2262286/do-more-with-r-video-tutorials.html</guid>
+    </item>
+    <item>
+      <title>How to choose the best LLM using R and vitals</title>
+      <link>https://www.infoworld.com/article/4130274/how-to-choose-the-best-llm-using-r-and-vitals.html</link>
+      <description><![CDATA[Use the vitals package with ellmer to evaluate and compare the accuracy of LLMs, including writing evals to test local models.]]></description>
+      <dc:creator>Sharon Machlis</dc:creator>
+      <pubDate>Thu, 19 Feb 2026 00:00:00 GMT</pubDate>
+      <guid isPermaLink="true">https://www.infoworld.com/article/4130274/how-to-choose-the-best-llm-using-r-and-vitals.html</guid>
+    </item>
+    <item>
+      <title>How to run an R data visualization chatbot you can talk to</title>
+      <link>https://www.infoworld.com/article/4072500/how-to-run-an-r-data-visualization-chatbot-you-can-talk-to.html</link>
+      <description><![CDATA[Read &quot;How to run an R data visualization chatbot you can talk to&quot; by Sharon Machlis on InfoWorld.]]></description>
+      <dc:creator>Sharon Machlis</dc:creator>
+      <pubDate>Thu, 16 Oct 2025 00:00:00 GMT</pubDate>
+      <guid isPermaLink="true">https://www.infoworld.com/article/4072500/how-to-run-an-r-data-visualization-chatbot-you-can-talk-to.html</guid>
     </item>
     <item>
       <title>Chat with data the easy way in R or Python</title>
@@ -27,9 +43,9 @@
       <guid isPermaLink="true">https://www.infoworld.com/article/4040535/chat-with-your-data-the-easy-way-in-r-or-python.html</guid>
     </item>
     <item>
-      <title>Databot: AI-assisted data analysis in R or Python</title>
+      <title>Databot Ai Assisted Data Analysis In R Or Python</title>
       <link>https://www.infoworld.com/article/4050900/databot-ai-assisted-data-analysis-in-r-or-python.html</link>
-      <description><![CDATA[Read &quot;Databot: AI-assisted data analysis in R or Python&quot; by Sharon Machlis on InfoWorld.]]></description>
+      <description><![CDATA[Read &quot;Databot Ai Assisted Data Analysis In R Or Python&quot; by Sharon Machlis on InfoWorld.]]></description>
       <dc:creator>Sharon Machlis</dc:creator>
       <pubDate>Thu, 04 Sep 2025 00:00:00 GMT</pubDate>
       <guid isPermaLink="true">https://www.infoworld.com/article/4050900/databot-ai-assisted-data-analysis-in-r-or-python.html</guid>
@@ -81,14 +97,6 @@
       <dc:creator>Sharon Machlis</dc:creator>
       <pubDate>Tue, 23 Jul 2024 00:00:00 GMT</pubDate>
       <guid isPermaLink="true">https://www.infoworld.com/article/3476823/shiny-for-python-adds-chat-component-for-generative-ai-chatbots.html</guid>
-    </item>
-    <item>
-      <title>Maker Of Rstudio Launches New R And Python Ide</title>
-      <link>https://www.infoworld.com/article/2510428/maker-of-rstudio-launches-new-r-and-python-ide.html</link>
-      <description><![CDATA[Read &quot;Maker Of Rstudio Launches New R And Python Ide&quot; by Sharon Machlis on InfoWorld.]]></description>
-      <dc:creator>Sharon Machlis</dc:creator>
-      <pubDate>Thu, 27 Jun 2024 00:00:00 GMT</pubDate>
-      <guid isPermaLink="true">https://www.infoworld.com/article/2510428/maker-of-rstudio-launches-new-r-and-python-ide.html</guid>
     </item>
   </channel>
 </rss>

@@ -5,7 +5,7 @@
     <link>https://www.infoworld.com/profile/sharon-machlis/</link>
     <description>Latest articles by Sharon Machlis on InfoWorld - Automatically generated RSS feed</description>
     <language>en-us</language>
-    <lastBuildDate>Thu, 11 Jun 2026 13:31:25 GMT</lastBuildDate>
+    <lastBuildDate>Thu, 18 Jun 2026 13:20:21 GMT</lastBuildDate>
     <generator>GitHub Actions RSS Generator</generator>
     <ttl>10080</ttl>
     <atom:link href="https://raw.githubusercontent.com/YOUR_USERNAME/YOUR_REPO/main/feed.xml" rel="self" type="application/rss+xml" />
@@ -15,13 +15,13 @@
       <link>https://www.infoworld.com/article/2262286/do-more-with-r-video-tutorials.html</link>
       <description><![CDATA[Sharon Machlis was a longtime writer and editor at Computerworld and later the Director of Editorial Data &amp; Analytics at parent company Foundry. She is also the author of Practical R for Mass Communications and Journalism.]]></description>
       <dc:creator>Sharon Machlis</dc:creator>
-      <pubDate>Thu, 11 Jun 2026 13:31:25 GMT</pubDate>
+      <pubDate>Thu, 18 Jun 2026 13:20:21 GMT</pubDate>
       <guid isPermaLink="true">https://www.infoworld.com/article/2262286/do-more-with-r-video-tutorials.html</guid>
     </item>
     <item>
       <title>How to choose the best LLM using R and vitals</title>
       <link>https://www.infoworld.com/article/4130274/how-to-choose-the-best-llm-using-r-and-vitals.html</link>
-      <description><![CDATA[Use the vitals package with ellmer to evaluate and compare the accuracy of LLMs, including writing evals to test local models.]]></description>
+      <description><![CDATA[Read &quot;How to choose the best LLM using R and vitals&quot; by Sharon Machlis on InfoWorld.]]></description>
       <dc:creator>Sharon Machlis</dc:creator>
       <pubDate>Mon, 06 Apr 2026 00:00:00 GMT</pubDate>
       <guid isPermaLink="true">https://www.infoworld.com/article/4130274/how-to-choose-the-best-llm-using-r-and-vitals.html</guid>
@@ -35,9 +35,9 @@
       <guid isPermaLink="true">https://www.infoworld.com/article/4072500/how-to-run-an-r-data-visualization-chatbot-you-can-talk-to.html</guid>
     </item>
     <item>
-      <title>Chat with data the easy way in R or Python</title>
+      <title>Chat With Your Data The Easy Way In R Or Python</title>
       <link>https://www.infoworld.com/article/4040535/chat-with-your-data-the-easy-way-in-r-or-python.html</link>
-      <description><![CDATA[Read &quot;Chat with data the easy way in R or Python&quot; by Sharon Machlis on InfoWorld.]]></description>
+      <description><![CDATA[Read &quot;Chat With Your Data The Easy Way In R Or Python&quot; by Sharon Machlis on InfoWorld.]]></description>
       <dc:creator>Sharon Machlis</dc:creator>
       <pubDate>Thu, 04 Sep 2025 00:00:00 GMT</pubDate>
       <guid isPermaLink="true">https://www.infoworld.com/article/4040535/chat-with-your-data-the-easy-way-in-r-or-python.html</guid>
@@ -89,14 +89,6 @@
       <dc:creator>Sharon Machlis</dc:creator>
       <pubDate>Thu, 19 Dec 2024 00:00:00 GMT</pubDate>
       <guid isPermaLink="true">https://www.infoworld.com/article/3624701/faq-getting-started-with-bluesky.html</guid>
-    </item>
-    <item>
-      <title>Shiny For Python Adds Chat Component For Generative Ai Chatbots</title>
-      <link>https://www.infoworld.com/article/3476823/shiny-for-python-adds-chat-component-for-generative-ai-chatbots.html</link>
-      <description><![CDATA[Read &quot;Shiny For Python Adds Chat Component For Generative Ai Chatbots&quot; by Sharon Machlis on InfoWorld.]]></description>
-      <dc:creator>Sharon Machlis</dc:creator>
-      <pubDate>Tue, 23 Jul 2024 00:00:00 GMT</pubDate>
-      <guid isPermaLink="true">https://www.infoworld.com/article/3476823/shiny-for-python-adds-chat-component-for-generative-ai-chatbots.html</guid>
     </item>
   </channel>
 </rss>
